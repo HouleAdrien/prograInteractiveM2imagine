@@ -62,6 +62,7 @@ public:
 
 private slots:
     void onAddNew();
+    void onOpenMesh();
 };
 
 #endif

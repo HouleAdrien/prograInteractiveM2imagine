@@ -48,68 +48,59 @@
 **
 ****************************************************************************/
 
-#ifndef GLWIDGET_H
-#define GLWIDGET_H
+#include <QApplication>
+#include <QDesktopWidget>
+#include <QSurfaceFormat>
+#include <QCommandLineParser>
+#include <QCommandLineOption>
 
-#include <QOpenGLWidget>
-#include <QOpenGLFunctions>
-#include <QOpenGLVertexArrayObject>
-#include <QOpenGLBuffer>
-#include <QMatrix4x4>
-#include "logo.h"
-#include "maillage.h"
-QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
+#include "glwidget.h"
+#include "mainwindow.h"
 
-class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
+int main(int argc, char *argv[])
 {
-    Q_OBJECT
+    QApplication app(argc, argv);
 
-public:
-    GLWidget(QWidget *parent = 0);
-    ~GLWidget();
+    QCoreApplication::setApplicationName("TP1 - Intro Qt");
+    QCoreApplication::setOrganizationName("QtProject");
+    QCoreApplication::setApplicationVersion(QT_VERSION_STR);
+    QCommandLineParser parser;
+    parser.setApplicationDescription(QCoreApplication::applicationName());
+    parser.addHelpOption();
+    parser.addVersionOption();
+    QCommandLineOption multipleSampleOption("multisample", "Multisampling");
+    parser.addOption(multipleSampleOption);
+    QCommandLineOption coreProfileOption("coreprofile", "Use core profile");
+    parser.addOption(coreProfileOption);
+    QCommandLineOption transparentOption("transparent", "Transparent window");
+    parser.addOption(transparentOption);
 
-    static bool isTransparent() { return m_transparent; }
-    static void setTransparent(bool t) { m_transparent = t; }
+    parser.process(app);
 
-    QSize minimumSizeHint() const override;
-    QSize sizeHint() const override;
+    QSurfaceFormat fmt;
+    fmt.setDepthBufferSize(24);
+    if (parser.isSet(multipleSampleOption))
+        fmt.setSamples(4);
+    if (parser.isSet(coreProfileOption)) {
+        fmt.setVersion(3, 2);
+        fmt.setProfile(QSurfaceFormat::CoreProfile);
+    }
+    QSurfaceFormat::setDefaultFormat(fmt);
 
-public slots:
-    void setXRotation(int angle);
-    void setYRotation(int angle);
-    void setZRotation(int angle);
-    void cleanup();
+    MainWindow mainWindow;
 
-signals:
-     void XRotationChanged(int angle);
-     void YRotationChanged(int angle);
-     void ZRotationChanged(int angle);
-
-
-protected:
-    void initializeGL() override;
-    void paintGL() override;
-    void resizeGL(int width, int height) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-
-private:
-    void setupVertexAttribs();
-
-    bool m_core;
-    int m_xRot;
-    int m_yRot;
-    int m_zRot;
-    QPoint m_last_position;
-    QOpenGLShaderProgram *m_program;
-    int m_mvp_matrix_loc;
-    int m_normal_matrix_loc;
-    int m_light_pos_loc;
-    QMatrix4x4 m_projection;
-    QMatrix4x4 m_view;
-    QMatrix4x4 m_model;
-    static bool m_transparent;
-    Maillage *maillage = nullptr;
-};
-
-#endif
+    GLWidget::setTransparent(parser.isSet(transparentOption));
+    if (GLWidget::isTransparent()) {
+        mainWindow.setAttribute(Qt::WA_TranslucentBackground);
+        mainWindow.setAttribute(Qt::WA_NoSystemBackground, false);
+    }
+    mainWindow.resize(mainWindow.sizeHint());
+    int desktopArea = QApplication::desktop()->width() *
+                     QApplication::desktop()->height();
+    int widgetArea = mainWindow.width() * mainWindow.height();
+    if (((float)widgetArea / (float)desktopArea) < 0.75f)
+        mainWindow.show();
+    else
+        mainWindow.showMaximized();
+    return app.exec();
+}

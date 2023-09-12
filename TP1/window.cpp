@@ -72,7 +72,12 @@ Window::Window(MainWindow *mw)
 
     //A completer, connecter les sliders de cette classe avec le glWidget pour mettre à jour la rotation
     // et inversement
-
+    connect(xSlider, &QSlider::valueChanged, glWidget, &GLWidget::setXRotation);
+    connect(glWidget, &GLWidget::XRotationChanged, xSlider, &QSlider::setValue);
+    connect(ySlider, &QSlider::valueChanged, glWidget, &GLWidget::setYRotation);
+    connect(glWidget, &GLWidget::YRotationChanged, ySlider, &QSlider::setValue);
+    connect(zSlider, &QSlider::valueChanged, glWidget, &GLWidget::setZRotation);
+    connect(glWidget, &GLWidget::ZRotationChanged, zSlider, &QSlider::setValue);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     QHBoxLayout *container = new QHBoxLayout;

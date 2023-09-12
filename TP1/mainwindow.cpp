@@ -58,10 +58,18 @@ MainWindow::MainWindow()
 {
     QMenuBar *menuBar = new QMenuBar;
     QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
+
     QAction *addNew = new QAction(menuWindow);
     addNew->setText(tr("Add new"));
     menuWindow->addAction(addNew);
+
+    QAction *openMesh = new QAction(menuWindow);
+    openMesh->setText(tr("Open mesh"));
+    menuWindow->addAction(openMesh);
+
     connect(addNew, &QAction::triggered, this, &MainWindow::onAddNew);
+    connect(addNew, &QAction::triggered, this, &MainWindow::onOpenMesh);
+
     setMenuBar(menuBar);
 
     onAddNew();
@@ -73,4 +81,9 @@ void MainWindow::onAddNew()
         setCentralWidget(new Window(this));
     else
         QMessageBox::information(0, tr("Cannot add new window"), tr("Already occupied. Undock first."));
+}
+
+void MainWindow::onOpenMesh()
+{
+
 }

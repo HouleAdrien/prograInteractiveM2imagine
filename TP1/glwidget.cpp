@@ -101,7 +101,7 @@ void GLWidget::setXRotation(int angle)
     qNormalizeAngle(angle);
     if (angle != m_xRot) {
         m_xRot = angle;
-        //Completer pour emettre un signal
+        emit XRotationChanged(angle);
 
         update();
     }
@@ -112,7 +112,7 @@ void GLWidget::setYRotation(int angle)
     qNormalizeAngle(angle);
     if (angle != m_yRot) {
         m_yRot = angle;
-        //Completer pour emettre un signal
+        emit YRotationChanged(angle);
 
         update();
     }
@@ -123,7 +123,7 @@ void GLWidget::setZRotation(int angle)
     qNormalizeAngle(angle);
     if (angle != m_zRot) {
         m_zRot = angle;
-        //Completer pour emettre un signal
+        emit ZRotationChanged(angle);
 
         update();
     }
@@ -134,7 +134,7 @@ void GLWidget::cleanup()
     if (m_program == nullptr)
         return;
     makeCurrent();
-    m_logoVbo.destroy();
+    delete maillage;
     delete m_program;
     m_program = 0;
     doneCurrent();
@@ -178,20 +178,7 @@ void GLWidget::initializeGL()
     m_normal_matrix_loc = m_program->uniformLocation("normal_matrix");
     m_light_pos_loc = m_program->uniformLocation("light_position");
 
-    // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
-    // implementations this is optional and support may not be present
-    // at all. Nonetheless the below code works in all cases and makes
-    // sure there is a VAO when one is needed.
-    m_vao.create();
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-
-    // Setup our vertex buffer object.
-    m_logoVbo.create();
-    m_logoVbo.bind();
-    m_logoVbo.allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
-
-    // Store the vertex attribute bindings for the program.
-    setupVertexAttribs();
+    maillage = new Maillage;
 
     // Our camera never changes in this example.
     m_view.setToIdentity();
@@ -203,16 +190,7 @@ void GLWidget::initializeGL()
     m_program->release();
 }
 
-void GLWidget::setupVertexAttribs()
-{
-    m_logoVbo.bind();
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    f->glEnableVertexAttribArray(0);
-    f->glEnableVertexAttribArray(1);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
-    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-    m_logoVbo.release();
-}
+
 
 void GLWidget::paintGL()
 {
@@ -225,7 +203,6 @@ void GLWidget::paintGL()
     m_model.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_model.rotate(m_zRot / 16.0f, 0, 0, 1);
 
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
     m_program->bind();
 
     // Set modelview-projection matrix
@@ -235,7 +212,7 @@ void GLWidget::paintGL()
     // Set normal matrix
     m_program->setUniformValue(m_normal_matrix_loc, normal_matrix);
 
-    glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
+    maillage->drawCubeGeometry(m_program);
 
     m_program->release();
 }
