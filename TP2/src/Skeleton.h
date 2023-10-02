@@ -233,17 +233,51 @@ struct Skeleton {
 
 
 
-    void updateIKChain( SkeletonTransformation & transfoIK , unsigned int targetArticulation , Vec3 targetPosition , unsigned int maxIterNumber = 20 , double epsilonPrecision = 0.000001 ) {
-        //---------------------------------------------------//
-        //---------------------------------------------------//
-        // code to change :
+    void updateIKChain(SkeletonTransformation & transfoIK , unsigned int targetArticulation , Vec3 targetPosition , unsigned int maxIterNumber = 20 , double epsilonPrecision = 0.000001 ) {
+    // Pour chaque itération :
+    for (unsigned int iter = 0; iter < maxIterNumber; ++iter) {
+        // Parcourir chaque os de la chaîne, en commençant par l'extrémité et en remontant vers la racine :
+        for (int bIdx = static_cast<int>(ordered_bone_indices.size()) - 1; bIdx >= 0; --bIdx) {  
+            Bone & bone = bones[ordered_bone_indices[bIdx]];
 
-        // You should orient the articulation towards target position: -> find R
-        // Note: you can use Mat3::getRotationMatrixAligning
-        //---------------------------------------------------//
-        //---------------------------------------------------//
-        //---------------------------------------------------//
+            // Obtenir la position actuelle de l'articulation :
+            Vec3 currentPos = transfoIK.articulations_transformed_position[bone.joints[1]];
+
+            // Calculer le vecteur de l'articulation actuelle à la cible :
+            Vec3 toTarget = targetPosition - currentPos;
+            toTarget.normalize();
+
+            // Calculer le vecteur de l'articulation actuelle à l'articulation de l'os :
+            Vec3 toJoint = transfoIK.articulations_transformed_position[bone.joints[0]] - currentPos;
+            toJoint.normalize();
+
+            // Calculer l'angle entre ces deux vecteurs :
+            double dotProduct = Vec3::dot(toJoint,toTarget);
+            double angle = acos(std::max(-1.0, std::min(1.0, dotProduct))); // Clamper pour éviter les erreurs numériques
+
+            // Calculer l'axe de rotation en utilisant le produit vectoriel :
+            Vec3 rotationAxis = Vec3::cross(toJoint,toTarget);
+            rotationAxis.normalize();
+
+            // Obtenir la matrice de rotation :
+            Mat3 rotation = Mat3::getRotationMatrixFromAxisAndAngle(rotationAxis, angle);
+
+            // Mettre à jour la transformation locale de l'os :
+            BoneTransformation & boneTransfo = transfoIK.bone_transformations[ordered_bone_indices[bIdx]];
+            boneTransfo.localRotation = rotation * boneTransfo.localRotation;
+        }
+
+        // Mettre à jour les transformations globales après avoir ajusté les rotations :
+        computeGlobalTransformationParameters(transfoIK);
+
+        // Vérifier la distance entre l'effecteur final et la cible :
+        double distance = (transfoIK.articulations_transformed_position[targetArticulation] - targetPosition).length();
+        if (distance < epsilonPrecision) {
+            break;  // Si nous sommes suffisamment proches, sortir de la boucle
+        }
+        }
     }
+
 
 
     //----------------------------------------------//
