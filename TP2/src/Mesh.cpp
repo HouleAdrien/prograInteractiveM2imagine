@@ -45,7 +45,7 @@ void Mesh::compute_skinning_weights( Skeleton & skeleton ) {
         vertex.w.resize(skeleton.bones.size(), 0.0);
     }
 
-    int n = 5;
+    int n = 10;
 
 	for(int i = 0; i < V.size(); i++) {
 		float totalWeight = 0.0f;
